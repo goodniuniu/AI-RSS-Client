@@ -1,0 +1,50 @@
+# AI-RSS-Client Configuration
+# 墨水屏 RSS 阅读器配置文件
+
+display:
+  width: 240
+  height: 360
+  rotation: 0
+  # 字体配置（树莓派常见字体）
+  font_file: "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
+  font_file_fallback: "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+  # 字号配置（基于 240×360 屏幕）
+  font_size_title: 18
+  font_size_headline: 16
+  font_size_summary: 15
+  font_size_meta: 9
+
+  # 布局配置
+  line_spacing: 1
+  margin: 6
+  title_height: 35
+  footer_height: 20
+
+services:
+  # 内容获取服务配置
+  enabled: true
+  interval_minutes: 20
+  max_articles_per_fetch: 50
+  daily_limit: 300
+
+display_scheduler:
+  # 显示调度服务配置
+  enabled: true
+  interval_minutes: 5
+  min_display_interval: 30  # 最小显示间隔（秒）
+  random_on_empty: true
+  mark_as_read_after_display: true
+
+logging:
+  # 日志配置
+  level: "INFO"
+  logfile: "data/logs/service.log"
+  max_log_size: 10485760  # 10MB
+  backup_count: 5
+
+network:
+  # 网络请求配置
+  timeout_seconds: 10
+  retries: 3
+  retry_delay: 5

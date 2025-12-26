@@ -1,0 +1,60 @@
+# 墨水屏服务快速恢复
+
+## 当前状态
+✅ 所有墨水屏服务已停止
+✅ GPIO 和 SPI 资源已释放
+✅ 可以进行测试
+
+---
+
+## 快速恢复命令
+
+### 一键恢复所有服务
+```bash
+sudo systemctl start ai-news-content-fetch.service \
+                    ai-news-display-scheduler.service \
+                    weather-poetry-display.service
+```
+
+### 验证服务状态
+```bash
+sudo systemctl status ai-news-content-fetch.service \
+                    ai-news-display-scheduler.service \
+                    weather-poetry-display.service | grep Active
+```
+
+### 查看实时日志
+```bash
+sudo journalctl -u ai-news-display-scheduler.service -f
+```
+
+---
+
+## 服务列表
+
+1. **ai-news-content-fetch.service** - AI 新闻内容获取
+2. **ai-news-display-scheduler.service** - AI 新闻显示调度
+3. **weather-poetry-display.service** - 天气与诗词显示
+
+---
+
+## 完整恢复文档
+
+详细信息请参考：`RESTORE_SERVICES.md`
+
+---
+
+## 测试完成后恢复
+
+完成墨水屏测试后，运行：
+```bash
+sudo systemctl start ai-news-content-fetch.service \
+                    ai-news-display-scheduler.service \
+                    weather-poetry-display.service
+```
+
+然后等待 1-2 分钟，墨水屏会恢复显示。
+
+---
+
+**服务暂停时间：** 2025-12-26 14:49

@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+
+# Logs
+data/logs/*.log
+*.log
+
+# Cache
+data/cache/*.json
+*.json.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+output/*.png
+test_*.png
+
+# Editor
+.vscode-server/
