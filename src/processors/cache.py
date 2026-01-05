@@ -361,7 +361,7 @@ class ArticleCache:
                     FROM articles
                     WHERE published_at >= ?
                     ORDER BY
-                        CASE WHEN displayed_at IS NULL THEN 1 ELSE 0 END,
+                        CASE WHEN displayed_at IS NULL THEN 0 ELSE 1 END,
                         displayed_at ASC
                     LIMIT ?
                 ''', (cutoff_date, limit))
@@ -371,7 +371,7 @@ class ArticleCache:
                            displayed_at, display_count, is_favorite, status
                     FROM articles
                     ORDER BY
-                        CASE WHEN displayed_at IS NULL THEN 1 ELSE 0 END,
+                        CASE WHEN displayed_at IS NULL THEN 0 ELSE 1 END,
                         displayed_at ASC
                     LIMIT ?
                 ''', (limit,))

@@ -41,16 +41,19 @@ class ServicesConfig:
     interval_minutes: int
     max_articles_per_fetch: int
     daily_limit: int
+    fetch_days: int  # 获取近N天的文章
+    max_cached_articles: int  # 本地最大缓存文章数
 
 
 @dataclass
 class DisplaySchedulerConfig:
     """显示调度服务配置"""
     enabled: bool
-    interval_minutes: int
+    interval_minutes: float  # 支持小数，如0.5分钟=30秒
     min_display_interval: int
     random_on_empty: bool
     mark_as_read_after_display: bool
+    display_days: int  # 循环播放近N天的文章
 
 
 @dataclass

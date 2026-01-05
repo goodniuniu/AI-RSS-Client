@@ -58,11 +58,22 @@ def fetch_content(base_url: str, api_token: str = None, limit: int = 50):
     print("Fetching content from API...")
 
     try:
-        client = create_client(base_url=base_url, api_token=api_token)
-        content_manager = ContentManager(api_client=client)
+        # Load config
+        config = Config()
 
-        # Fetch articles
-        success = content_manager.fetch_and_process_content()
+        client = create_client(base_url=base_url, api_token=api_token)
+        content_manager = ContentManager(
+            api_client=client,
+            max_cached_articles=config.services.max_cached_articles,
+            batch_size=config.services.max_articles_per_fetch,
+            fetch_interval_minutes=config.services.interval_minutes,
+            display_days=config.display_scheduler.display_days
+        )
+
+        # Fetch articles (获取近3天)
+        success = content_manager.fetch_and_process_content(
+            days=config.services.fetch_days
+        )
 
         if success:
             # Show status
@@ -82,15 +93,24 @@ def fetch_content(base_url: str, api_token: str = None, limit: int = 50):
         return False
 
 
-def run_display(base_url: str, api_token: str = None, interval: int = 1,
+def run_display(base_url: str, api_token: str = None, interval: float = 0.5,
                 cycles: int = None, test_only: bool = False):
     """Run display scheduler"""
     print("Starting display scheduler...")
 
     try:
+        # Load config
+        config = Config()
+
         # Create components
         client = create_client(base_url=base_url, api_token=api_token)
-        content_manager = ContentManager(api_client=client)
+        content_manager = ContentManager(
+            api_client=client,
+            max_cached_articles=config.services.max_cached_articles,
+            batch_size=config.services.max_articles_per_fetch,
+            fetch_interval_minutes=config.services.interval_minutes,
+            display_days=config.display_scheduler.display_days
+        )
         scheduler = DisplayScheduler(
             content_manager=content_manager,
             display_interval_minutes=interval

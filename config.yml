@@ -34,16 +34,19 @@ services:
   # 内容获取服务配置
   enabled: true
   interval_minutes: 20
-  max_articles_per_fetch: 50
-  daily_limit: 300
+  max_articles_per_fetch: 200  # 增加到200篇，确保获取3天内的所有文章
+  daily_limit: 1000  # 增加每日限制
+  fetch_days: 3  # 获取近3天的文章
+  max_cached_articles: 1000  # 本地最多缓存1000篇文章
 
 display_scheduler:
   # 显示调度服务配置
   enabled: true
-  interval_minutes: 5
+  interval_minutes: 0.5  # 30秒切换一次
   min_display_interval: 30  # 最小显示间隔（秒）
   random_on_empty: true
-  mark_as_read_after_display: true
+  mark_as_read_after_display: false  # 改为false，支持循环播放
+  display_days: 3  # 循环播放近3天的文章
 
 logging:
   # 日志配置

@@ -31,8 +31,9 @@ class ContentManager:
     def __init__(self, api_client: AIRSSHubClient = None,
                  cache: ArticleCache = None,
                  fetch_interval_minutes: int = 20,
-                 batch_size: int = 50,
-                 max_cached_articles: int = 500):
+                 batch_size: int = 200,  # 增加默认值到200
+                 max_cached_articles: int = 1000,  # 增加默认值到1000
+                 display_days: int = 3):  # 新增display_days参数
         """
         Initialize content manager
 
@@ -55,13 +56,15 @@ class ContentManager:
         self.cache = cache
         self.fetch_interval_minutes = fetch_interval_minutes
         self.batch_size = batch_size
+        self.display_days = display_days  # 循环播放的天数
 
         # State tracking
         self.last_fetch_time: Optional[datetime] = None
         self.last_fetch_count: int = 0
         self.is_fetching: bool = False
 
-        logger.info("Content manager initialized")
+        logger.info(f"Content manager initialized (batch_size={batch_size}, "
+                   f"max_cached={max_cached_articles}, display_days={display_days})")
 
     def fetch_and_process_content(self, category: str = None, days: int = 7) -> bool:
         """
@@ -129,8 +132,8 @@ class ContentManager:
             Article object or None if no articles available
         """
         try:
-            # 策略1: 获取最近3天内最久未显示的文章（实现轮询）
-            recent_articles = self.cache.get_articles_by_display_time(limit=200, days=3)
+            # 策略1: 获取最近display_days天内最久未显示的文章（实现轮询）
+            recent_articles = self.cache.get_articles_by_display_time(limit=200, days=self.display_days)
 
             if recent_articles:
                 # 选择第一篇（最久未显示的）
