@@ -38,6 +38,8 @@ services:
   daily_limit: 1000  # 增加每日限制
   fetch_days: 3  # 获取近3天的文章
   max_cached_articles: 1000  # 本地最多缓存1000篇文章
+  incremental_fetch: false  # 是否启用增量获取（只获取新文章）
+  fetch_feed_ids: []  # 指定要获取的RSS源ID列表（空=全部）
 
 display_scheduler:
   # 显示调度服务配置

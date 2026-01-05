@@ -70,10 +70,22 @@ def fetch_content(base_url: str, api_token: str = None, limit: int = 50):
             display_days=config.display_scheduler.display_days
         )
 
-        # Fetch articles (获取近3天)
-        success = content_manager.fetch_and_process_content(
-            days=config.services.fetch_days
-        )
+        # Fetch articles (根据配置选择获取策略)
+        if config.services.incremental_fetch:
+            # 增量获取模式：只获取新文章
+            success = content_manager.fetch_incremental()
+        elif config.services.fetch_feed_ids:
+            # 指定RSS源模式：获取特定源的文章
+            # 如果配置了多个feed_id，逐个获取
+            success = False
+            for feed_id in config.services.fetch_feed_ids:
+                if content_manager.fetch_by_feed(feed_id):
+                    success = True
+        else:
+            # 默认模式：获取近N天的文章
+            success = content_manager.fetch_and_process_content(
+                days=config.services.fetch_days
+            )
 
         if success:
             # Show status

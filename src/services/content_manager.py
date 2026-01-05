@@ -66,13 +66,19 @@ class ContentManager:
         logger.info(f"Content manager initialized (batch_size={batch_size}, "
                    f"max_cached={max_cached_articles}, display_days={display_days})")
 
-    def fetch_and_process_content(self, category: str = None, days: int = 7) -> bool:
+    def fetch_and_process_content(self, category: str = None, days: int = None,
+                                   start_date: str = None, end_date: str = None,
+                                   incremental: bool = False, feed_id: int = None) -> bool:
         """
-        Fetch new content from API and update cache
+        Fetch new content from API and update cache with enhanced filtering
 
         Args:
             category: Filter by category
             days: Fetch articles from last N days
+            start_date: Start date (YYYY-MM-DD format)
+            end_date: End date (YYYY-MM-DD format)
+            incremental: If True, only fetch articles newer than last cached article
+            feed_id: Filter by specific RSS feed ID
 
         Returns:
             True if successful, False otherwise
@@ -90,13 +96,41 @@ class ContentManager:
                 logger.error("API connection test failed")
                 return False
 
-            # Fetch articles from API
-            logger.info(f"Fetching articles (limit={self.batch_size}, category={category}, days={days})")
-            articles = self.api_client.get_articles(
-                limit=self.batch_size,
-                category=category,
-                days=days
-            )
+            # Fetch articles from API with enhanced filtering
+            fetch_params = {
+                'limit': self.batch_size
+            }
+
+            # Build fetch parameters
+            if incremental:
+                # Incremental mode: only get articles newer than last cached
+                last_article = self.cache.get_latest_article()
+                if last_article and last_article.published_at:
+                    fetch_params['after'] = last_article.published_at
+                    logger.info(f"Incremental fetch: getting articles after {last_article.published_at}")
+                else:
+                    # No cached articles, fetch recent articles
+                    fetch_params['days'] = days or self.fetch_interval_minutes // 1440  # Convert minutes to days if needed
+                    logger.info(f"No cached articles, fetching recent {fetch_params.get('days', 'all')} articles")
+            elif start_date or end_date:
+                # Date range mode
+                if start_date:
+                    fetch_params['start_date'] = start_date
+                if end_date:
+                    fetch_params['end_date'] = end_date
+                logger.info(f"Date range fetch: {start_date} to {end_date}")
+            else:
+                # Default: use days parameter
+                fetch_params['days'] = days or 3
+
+            # Add optional filters
+            if category:
+                fetch_params['category'] = category
+            if feed_id:
+                fetch_params['feed_id'] = feed_id
+
+            logger.info(f"Fetching articles with params: {fetch_params}")
+            articles = self.api_client.get_articles(**fetch_params)
 
             if not articles:
                 logger.warning("No articles returned from API")
@@ -278,6 +312,48 @@ class ContentManager:
         except Exception as e:
             logger.error(f"Failed to trigger backend fetch: {e}")
             return False
+
+    def fetch_by_feed(self, feed_id: int, limit: int = None) -> bool:
+        """
+        Fetch articles from a specific RSS feed
+
+        Args:
+            feed_id: RSS feed ID to fetch from
+            limit: Maximum number of articles to fetch (default: use batch_size)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Fetching articles from feed ID: {feed_id}")
+        return self.fetch_and_process_content(feed_id=feed_id)
+
+    def fetch_by_date_range(self, start_date: str, end_date: str, limit: int = None) -> bool:
+        """
+        Fetch articles from a specific date range
+
+        Args:
+            start_date: Start date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format
+            limit: Maximum number of articles to fetch (default: use batch_size)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Fetching articles from {start_date} to {end_date}")
+        return self.fetch_and_process_content(start_date=start_date, end_date=end_date)
+
+    def fetch_incremental(self) -> bool:
+        """
+        Fetch only new articles (incremental update)
+
+        This method only fetches articles that are newer than the latest
+        cached article, reducing bandwidth and processing time.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info("Fetching incremental articles")
+        return self.fetch_and_process_content(incremental=True)
 
     def get_offline_articles(self, limit: int = 50) -> List[Article]:
         """

@@ -338,6 +338,39 @@ class ArticleCache:
             logger.error(f"Failed to get random article: {e}")
             return None
 
+    def get_latest_article(self) -> Optional[Article]:
+        """
+        Get the most recent article based on published_at
+
+        Returns:
+            Article object or None if no articles exist
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                       displayed_at, display_count, is_favorite, status
+                FROM articles
+                WHERE published_at IS NOT NULL
+                ORDER BY published_at DESC
+                LIMIT 1
+            ''')
+
+            row = cursor.fetchone()
+            conn.close()
+
+            if row:
+                article = self._row_to_article(row)
+                logger.debug(f"Latest article: {article.display_title} ({article.published_at})")
+                return article
+            return None
+
+        except sqlite3.Error as e:
+            logger.error(f"Failed to get latest article: {e}")
+            return None
+
     def get_articles_by_display_time(self, limit: int = 50, days: int = None) -> List[Article]:
         """
         Get articles sorted by displayed_at (oldest first for round-robin)

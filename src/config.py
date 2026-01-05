@@ -43,6 +43,8 @@ class ServicesConfig:
     daily_limit: int
     fetch_days: int  # 获取近N天的文章
     max_cached_articles: int  # 本地最大缓存文章数
+    incremental_fetch: bool  # 是否启用增量获取
+    fetch_feed_ids: list  # 指定要获取的RSS源ID列表
 
 
 @dataclass

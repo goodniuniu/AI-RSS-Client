@@ -270,26 +270,48 @@ class AIRSSHubClient:
             raise
 
     def get_articles(self, limit: int = 50, category: str = None,
-                     days: int = None) -> List[Article]:
+                     days: int = None, start_date: str = None, end_date: str = None,
+                     after: str = None, before: str = None, since: str = None,
+                     feed_id: int = None) -> List[Article]:
         """
-        Get list of articles
+        Get list of articles with enhanced filtering
 
-        GET /api/articles?limit=50&category=tech&days=7
+        GET /api/articles?limit=50&category=tech&days=7&start_date=2026-01-01&end_date=2026-01-05
 
         Args:
             limit: Maximum number of articles to return (1-200)
             category: Filter by category
             days: Only return articles from last N days
+            start_date: Start date (ISO 8601 format: YYYY-MM-DD)
+            end_date: End date (ISO 8601 format: YYYY-MM-DD)
+            after: Get articles after this timestamp (ISO 8601 format)
+            before: Get articles before this timestamp (ISO 8601 format)
+            since: Get articles since this date (ISO 8601 format: YYYY-MM-DD)
+            feed_id: Filter by specific RSS feed ID
 
         Returns:
             List of Article objects
         """
         try:
             params = {'limit': limit}
+
+            # Add optional parameters
             if category:
                 params['category'] = category
             if days:
                 params['days'] = days
+            if start_date:
+                params['start_date'] = start_date
+            if end_date:
+                params['end_date'] = end_date
+            if after:
+                params['after'] = after
+            if before:
+                params['before'] = before
+            if since:
+                params['since'] = since
+            if feed_id:
+                params['feed_id'] = feed_id
 
             logger.debug(f"Fetching articles: {params}")
             response_data = self._request('GET', '/api/articles', params=params)
