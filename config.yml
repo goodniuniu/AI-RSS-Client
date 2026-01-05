@@ -1,6 +1,15 @@
 # AI-RSS-Client Configuration
 # 墨水屏 RSS 阅读器配置文件
 
+api:
+  # AI-RSS-Hub API配置
+  base_url: "http://8.134.202.27:8000"
+  timeout: 10
+  retry_attempts: 3
+  retry_delay: 2
+  # API Token (如果后端需要认证)
+  api_token: null  # 或设置环境变量 AI_RSS_API_TOKEN
+
 display:
   width: 240
   height: 360

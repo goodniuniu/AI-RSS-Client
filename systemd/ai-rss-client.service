@@ -1,0 +1,37 @@
+[Unit]
+Description=AI-RSS-Client E-paper Display Service
+Documentation=https://github.com/yourusername/AI-RSS-Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/Github/AI-RSS-Client
+
+# 启动命令
+ExecStart=/usr/bin/python3 /home/admin/Github/AI-RSS-Client/main.py run --base-url http://8.134.202.27:8000
+
+# 重启策略：如果崩溃则自动重启
+Restart=on-failure
+RestartSec=10
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ai-rss-client
+
+# 资源限制
+LimitNOFILE=65536
+
+# 安全配置
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 环境变量
+Environment="PYTHONUNBUFFERED=1"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=multi-user.target
