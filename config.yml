@@ -22,7 +22,7 @@ display:
   font_size_title: 18
   font_size_headline: 16
   font_size_summary: 15
-  font_size_meta: 9
+  font_size_meta: 12  # 增大底部时间字体，从9pt提升到12pt
 
   # 布局配置
   line_spacing: 1
@@ -34,8 +34,8 @@ services:
   # 内容获取服务配置
   enabled: true
   interval_minutes: 20
-  max_articles_per_fetch: 200  # 增加到200篇，确保获取3天内的所有文章
-  daily_limit: 1000  # 增加每日限制
+  max_articles_per_fetch: 200  # 每次获取最多200篇
+  daily_limit: 1000  # 每日限制
   fetch_days: 3  # 获取近3天的文章
   max_cached_articles: 1000  # 本地最多缓存1000篇文章
   incremental_fetch: false  # 是否启用增量获取（只获取新文章）

@@ -375,6 +375,11 @@ class ArticleCache:
         """
         Get articles sorted by displayed_at (oldest first for round-robin)
 
+        排序策略（真正的轮询）：
+        1. 优先选择最久未显示的文章（displayed_at 最旧的）
+        2. 对于从未显示的文章（displayed_at IS NULL），按 published_at DESC 排序（最新的优先）
+        3. 这样确保所有文章都能被循环显示
+
         Args:
             limit: Maximum number of articles to return
             days: Only return articles from last N days (None for all time)
@@ -392,10 +397,11 @@ class ArticleCache:
                     SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
                            displayed_at, display_count, is_favorite, status
                     FROM articles
-                    WHERE published_at >= ?
+                    WHERE published_at >= ? AND title IS NOT NULL AND title != ""
                     ORDER BY
                         CASE WHEN displayed_at IS NULL THEN 0 ELSE 1 END,
-                        displayed_at ASC
+                        displayed_at ASC,
+                        published_at DESC
                     LIMIT ?
                 ''', (cutoff_date, limit))
             else:
@@ -403,9 +409,11 @@ class ArticleCache:
                     SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
                            displayed_at, display_count, is_favorite, status
                     FROM articles
+                    WHERE title IS NOT NULL AND title != ""
                     ORDER BY
                         CASE WHEN displayed_at IS NULL THEN 0 ELSE 1 END,
-                        displayed_at ASC
+                        displayed_at ASC,
+                        published_at DESC
                     LIMIT ?
                 ''', (limit,))
 
