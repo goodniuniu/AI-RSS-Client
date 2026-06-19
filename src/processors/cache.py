@@ -75,6 +75,10 @@ class ArticleCache:
                     link TEXT NOT NULL,
                     content TEXT,
                     summary TEXT,
+                    summary_en TEXT,
+                    feed_name TEXT,
+                    feed_category TEXT,
+                    feed_url TEXT,
                     published_at TEXT,
                     created_at TEXT,
 
@@ -155,9 +159,9 @@ class ArticleCache:
                 try:
                     cursor.execute('''
                         INSERT OR REPLACE INTO articles
-                        (id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
-                         displayed_at, display_count, is_favorite, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url,
+                         published_at, created_at, displayed_at, display_count, is_favorite, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         article.id,
                         article.feed_id,
@@ -166,6 +170,9 @@ class ArticleCache:
                         article.content,
                         article.summary,
                         article.summary_en,
+                        article.feed_name,
+                        article.feed_category,
+                        article.feed_url,
                         article.published_at,
                         article.created_at,
                         article.displayed_at,
@@ -211,7 +218,7 @@ class ArticleCache:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                        displayed_at, display_count, is_favorite, status
                 FROM articles
                 WHERE id = ?
@@ -243,7 +250,7 @@ class ArticleCache:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                        displayed_at, display_count, is_favorite, status
                 FROM articles
                 WHERE status = 'new'
@@ -280,7 +287,7 @@ class ArticleCache:
             if days:
                 cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
                 cursor.execute('''
-                    SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                    SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                            displayed_at, display_count, is_favorite, status
                     FROM articles
                     WHERE published_at >= ?
@@ -289,7 +296,7 @@ class ArticleCache:
                 ''', (cutoff_date, limit))
             else:
                 cursor.execute('''
-                    SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                    SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                            displayed_at, display_count, is_favorite, status
                     FROM articles
                     ORDER BY published_at DESC, created_at DESC
@@ -319,7 +326,7 @@ class ArticleCache:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                        displayed_at, display_count, is_favorite, status
                 FROM articles
                 WHERE status != 'new'
@@ -350,7 +357,7 @@ class ArticleCache:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                        displayed_at, display_count, is_favorite, status
                 FROM articles
                 WHERE published_at IS NOT NULL
@@ -394,7 +401,7 @@ class ArticleCache:
             if days:
                 cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
                 cursor.execute('''
-                    SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                    SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                            displayed_at, display_count, is_favorite, status
                     FROM articles
                     WHERE published_at >= ? AND title IS NOT NULL AND title != ""
@@ -406,7 +413,7 @@ class ArticleCache:
                 ''', (cutoff_date, limit))
             else:
                 cursor.execute('''
-                    SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                    SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                            displayed_at, display_count, is_favorite, status
                     FROM articles
                     WHERE title IS NOT NULL AND title != ""
@@ -440,7 +447,7 @@ class ArticleCache:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT id, feed_id, title, link, content, summary, summary_en, published_at, created_at,
+                SELECT id, feed_id, title, link, content, summary, summary_en, feed_name, feed_category, feed_url, published_at, created_at,
                        displayed_at, display_count, is_favorite, status
                 FROM articles
                 ORDER BY RANDOM()
@@ -665,21 +672,44 @@ class ArticleCache:
 
     def _row_to_article(self, row) -> Article:
         """Convert database row to Article object"""
-        return Article(
-            id=row[0],
-            feed_id=row[1],
-            title=row[2],
-            link=row[3],
-            content=row[4],
-            summary=row[5],
-            summary_en=row[6],  # English summary
-            published_at=row[7],
-            created_at=row[8],
-            displayed_at=row[9],
-            display_count=row[10],
-            is_favorite=bool(row[11]),
-            status=ArticleStatus(row[12]) if row[12] else ArticleStatus.NEW
-        )
+        # Handle both old (13 columns) and new (16 columns) row formats
+        if len(row) >= 16:
+            # New format with feed info
+            return Article(
+                id=row[0],
+                feed_id=row[1],
+                title=row[2],
+                link=row[3],
+                content=row[4],
+                summary=row[5],
+                summary_en=row[6],
+                feed_name=row[7],
+                feed_category=row[8],
+                feed_url=row[9],
+                published_at=row[10],
+                created_at=row[11],
+                displayed_at=row[12],
+                display_count=row[13],
+                is_favorite=bool(row[14]),
+                status=ArticleStatus(row[15]) if row[15] else ArticleStatus.NEW
+            )
+        else:
+            # Old format (13 columns) - for backward compatibility
+            return Article(
+                id=row[0],
+                feed_id=row[1],
+                title=row[2],
+                link=row[3],
+                content=row[4],
+                summary=row[5],
+                summary_en=row[6],
+                published_at=row[7],
+                created_at=row[8],
+                displayed_at=row[9],
+                display_count=row[10],
+                is_favorite=bool(row[11]),
+                status=ArticleStatus(row[12]) if row[12] else ArticleStatus.NEW
+            )
 
     def clear(self):
         """Clear all cached data"""

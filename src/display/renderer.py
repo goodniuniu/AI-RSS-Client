@@ -454,7 +454,9 @@ class ContentRenderer:
         if 'custom_footer' in article:
             footer_text = article['custom_footer']
         else:
-            source = article.get('source', '未知来源')
+            # 优先使用 feed_category（来源分类），其次使用 source
+            source_category = article.get('feed_category', '')
+            feed_name = article.get('feed_name', '')
             published = article.get('published', '')
 
             # 格式化日期 - 显示完整时间以便区分新旧
@@ -468,13 +470,15 @@ class ContentRenderer:
             else:
                 date_str = ''
 
-            # 优先显示时间，其次显示来源
+            # 优先显示时间，其次显示来源分类
             if date_str:
                 footer_text = f"{date_str}"
-                if source and source != '未知来源':
-                    footer_text += f" {source}"
+                if source_category:
+                    footer_text += f" |{source_category}"
+            elif feed_name:
+                footer_text += f" |{feed_name}"
             else:
-                footer_text = source
+                footer_text = source_category or feed_name or 'AI-NEWS'
 
         # 左对齐：显示发布时间（主要）和来源（次要）
         text_y = footer_y + 4

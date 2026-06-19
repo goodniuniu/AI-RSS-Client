@@ -28,6 +28,10 @@ class Article:
     - link: URL to the original article
     - content: Full article content (optional)
     - summary: AI-generated summary (optional)
+    - summary_en: AI-generated English summary (optional)
+    - feed_name: RSS feed name (optional)
+    - feed_category: RSS feed category (optional)
+    - feed_url: RSS feed URL (optional)
     - published_at: Publication timestamp (optional)
     - created_at: Database creation timestamp
 
@@ -45,6 +49,9 @@ class Article:
     content: Optional[str] = None
     summary: Optional[str] = None
     summary_en: Optional[str] = None  # 英文摘要
+    feed_name: Optional[str] = None  # 来源名称
+    feed_category: Optional[str] = None  # 来源分类
+    feed_url: Optional[str] = None  # 来源RSS URL
     published_at: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -168,6 +175,9 @@ class Article:
             'content': self.content,
             'summary': self.summary,
             'summary_en': self.summary_en,
+            'feed_name': self.feed_name,
+            'feed_category': self.feed_category,
+            'feed_url': self.feed_url,
             'published_at': self.published_at,
             'created_at': self.created_at,
             'displayed_at': self.displayed_at,
@@ -187,7 +197,10 @@ class Article:
             link=data['link'],
             content=data.get('content'),
             summary=data.get('summary'),
-            summary_en=data.get('summary_en'),  # 新增字段
+            summary_en=data.get('summary_en'),
+            feed_name=data.get('feed_name'),
+            feed_category=data.get('feed_category'),
+            feed_url=data.get('feed_url'),
             published_at=data.get('published_at'),
             created_at=data.get('created_at'),
         )
@@ -222,7 +235,10 @@ class Article:
             link=data['link'],
             content=data.get('content'),
             summary=data.get('summary'),
-            summary_en=data.get('summary_en'),  # 新增字段
+            summary_en=data.get('summary_en'),
+            feed_name=data.get('feed_name'),
+            feed_category=data.get('feed_category'),
+            feed_url=data.get('feed_url'),
             published_at=data.get('published_at'),
             created_at=data.get('created_at'),
         )

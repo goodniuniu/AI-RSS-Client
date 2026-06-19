@@ -172,12 +172,18 @@ class DisplayScheduler:
             # Render article
             logger.info(f"Rendering article: {article.display_title}")
             # Prepare article dict for renderer
+            # 使用 feed_name 和 feed_category 构建来源信息
+            source_info = article.feed_name if article.feed_name else 'AI-RSS'
+            if article.feed_category:
+                source_info = f"{article.feed_category}"
             article_dict = {
                 'title': article.display_title,
                 'summary': article.display_content,
                 'summary_en': article.display_content_en,  # English summary for bilingual display
-                'source': 'AI-RSS',
+                'source': source_info,
                 'published': article.display_date,
+                'feed_name': article.feed_name,  # 额外传递原始 feed 名称
+                'feed_category': article.feed_category,  # 额外传递分类
             }
             # Enable bilingual mode by default to help users learn English
             image = self.renderer.render_news_card(article_dict, index=1, total=1,
