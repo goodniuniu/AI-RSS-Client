@@ -405,15 +405,15 @@ class ContentRenderer:
             ], fill=0, width=1)
             cursor_y += 5
 
-            # 3. 绘制英文摘要（学习区域，13pt，10行）
+            # 3. 绘制英文摘要（学习区域，16pt，6行）
             summary_en = article.get('summary_en', '')
             if summary_en:
-                # 英文字号提升到13pt
-                font_en = self.fonts.get_font(13)
+                # 英文字号提升到16pt（更易读）
+                font_en = self.fonts.get_font(16)
 
-                # 英文摘要最多显示10行（最大化显示）
+                # 英文摘要最多显示6行（适应16pt字体）
                 available_height_en = self.height - cursor_y - self.footer_height - self.margin
-                max_lines_en = min(10, self.layout.calculate_max_lines(available_height_en, font_en))
+                max_lines_en = min(6, self.layout.calculate_max_lines(available_height_en, font_en))
 
                 truncated_en = self.layout.truncate_text(
                     summary_en, font_en, self.content_width, max_lines_en, add_ellipsis=True
