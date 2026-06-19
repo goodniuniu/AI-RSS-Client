@@ -36,7 +36,7 @@ services:
   interval_minutes: 20
   max_articles_per_fetch: 200  # 每次获取最多200篇
   daily_limit: 1000  # 每日限制
-  fetch_days: 3  # 获取近3天的文章
+  fetch_days: 7  # 获取近7天的文章
   max_cached_articles: 1000  # 本地最多缓存1000篇文章
   incremental_fetch: false  # 是否启用增量获取（只获取新文章）
   fetch_feed_ids: []  # 指定要获取的RSS源ID列表（空=全部）
@@ -48,7 +48,7 @@ display_scheduler:
   min_display_interval: 30  # 最小显示间隔（秒）
   random_on_empty: true
   mark_as_read_after_display: false  # 改为false，支持循环播放
-  display_days: 3  # 循环播放近3天的文章
+  display_days: 7  # 循环播放近7天的文章
 
 logging:
   # 日志配置
