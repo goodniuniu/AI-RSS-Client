@@ -37,3 +37,8 @@ test_*.png
 
 # Editor
 .vscode-server/
+
+# Runtime data
+data/*.db
+data/*.json
+data/*.png
