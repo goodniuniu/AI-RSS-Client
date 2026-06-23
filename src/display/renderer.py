@@ -16,6 +16,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import requests
 from PIL import Image, ImageDraw
+from io import BytesIO
 
 from .fonts import FontManager
 from .layout_engine import LayoutEngine
@@ -65,7 +66,47 @@ class ContentRenderer:
         # 初始化时获取天气
         self._update_weather()
 
+        # 二维码缓存
+        self.qr_code_cache = {}
+
         logger.debug(f"渲染器初始化: {width}×{height}, 内容宽度: {self.content_width}px")
+
+    def _load_qr_code(self, qr_code_url: str, base_url: str) -> Optional[Image.Image]:
+        """
+        加载二维码图片
+
+        Args:
+            qr_code_url: 二维码URL（相对路径）
+            base_url: API基础URL
+
+        Returns:
+            PIL Image对象，失败返回None
+        """
+        if not qr_code_url:
+            return None
+
+        # 检查缓存
+        if qr_code_url in self.qr_code_cache:
+            return self.qr_code_cache[qr_code_url]
+
+        try:
+            full_url = f"{base_url.rstrip('/')}{qr_code_url}"
+            response = requests.get(full_url, timeout=5)
+            response.raise_for_status()
+            qr_image = Image.open(BytesIO(response.content))
+
+            # 确保是黑白图像
+            if qr_image.mode != '1':
+                qr_image = qr_image.convert('1')
+
+            # 缓存图像
+            self.qr_code_cache[qr_code_url] = qr_image
+            logger.debug(f"二维码加载成功: {qr_code_url}")
+            return qr_image
+
+        except Exception as e:
+            logger.warning(f"加载二维码失败 ({qr_code_url}): {e}")
+            return None
 
     def render_news_card(self, article: Dict[str, Any],
                          index: int = 1, total: int = 1,
@@ -114,10 +155,51 @@ class ContentRenderer:
         # 3. 绘制标题
         cursor_y = self._draw_title(draw, article, self.title_height + self.margin + 5)
 
-        # 4. 绘制摘要区域
-        cursor_y = self._draw_summary_bilingual(draw, article, cursor_y + 10, bilingual=bilingual)
+        # 4. 计算可用空间（为二维码预留140px）
+        qr_code_height = 140
+        available_height = self.height - cursor_y - self.footer_height - qr_code_height - self.margin
 
-        # 5. 绘制 Footer（包含IP地址）
+        # 5. 绘制摘要区域（限制高度）
+        if available_height > 50:
+            cursor_y = self._draw_summary_bilingual(draw, article, cursor_y + 10,
+                                                     max_height=available_height,
+                                                     bilingual=bilingual)
+        else:
+            cursor_y += 10
+
+        # 6. 绘制二维码（底部居中）
+        qr_y = cursor_y + 10
+        qr_size = 120
+        qr_x = (self.width - qr_size) // 2
+
+        # 绘制二维码
+        qr_code_url = article.get('qr_code_url')
+        if qr_code_url:
+            try:
+                base_url = "http://8.134.202.27:8000"
+                qr_image = self._load_qr_code(qr_code_url, base_url)
+                if qr_image:
+                    # 缩放二维码
+                    qr_resized = qr_image.resize((qr_size, qr_size), Image.NEAREST)
+                    # 粘贴到主画布
+                    image.paste(qr_resized, (qr_x, qr_y))
+                    logger.debug(f"二维码已粘贴到画布: ({qr_x}, {qr_y})")
+                else:
+                    # 绘制占位符
+                    draw.rectangle([(qr_x, qr_y), (qr_x + qr_size - 1, qr_y + qr_size - 1)], outline=0)
+                    font = self.fonts.get_font(10)
+                    text = "扫码阅读"
+                    bbox = draw.textbbox((0, 0), text, font=font)
+                    text_width = bbox[2] - bbox[0]
+                    text_x = qr_x + (qr_size - text_width) // 2
+                    text_y = qr_y + (qr_size - 10) // 2
+                    draw.text((text_x, text_y), text, font=font, fill=0)
+            except Exception as e:
+                logger.error(f"绘制二维码失败: {e}")
+                # 绘制占位符
+                draw.rectangle([(qr_x, qr_y), (qr_x + qr_size - 1, qr_y + qr_size - 1)], outline=0)
+
+        # 7. 绘制 Footer（包含IP地址）
         self._draw_footer(draw, article, ip_address)
 
         return image
@@ -345,7 +427,8 @@ class ContentRenderer:
     def _draw_summary_bilingual(self, draw: ImageDraw.Draw,
                                article: Dict[str, Any],
                                start_y: int,
-                               bilingual: bool = True) -> int:
+                               bilingual: bool = True,
+                               max_height: Optional[int] = None) -> int:
         """
         绘制双语摘要（中文 + 英文）
 
@@ -359,6 +442,7 @@ class ContentRenderer:
             article: 文章数据
             start_y: 起始 Y 坐标
             bilingual: 是否启用双语模式
+            max_height: 最大高度限制（为二维码预留空间）
 
         Returns:
             int: 绘制后的 Y 坐标
@@ -377,10 +461,14 @@ class ContentRenderer:
         # 中文字号14pt
         font_zh = self.fonts.get_font(14)
 
-        # 计算中文摘要可用空间（预留大量空间给10行英文）
-        # 预留: 分隔线(5px) + 英文区域(130px) + footer
-        reserved_space = 5 + 130 + self.footer_height + self.margin
-        available_height_zh = self.height - cursor_y - reserved_space
+        # 计算中文摘要可用空间
+        if max_height:
+            available_height_zh = max_height
+        else:
+            # 预留: 分隔线(5px) + 英文区域(130px) + footer
+            reserved_space = 5 + 130 + self.footer_height + self.margin
+            available_height_zh = self.height - cursor_y - reserved_space
+
         max_lines_zh = self.layout.calculate_max_lines(available_height_zh, font_zh)
 
         # 绘制中文摘要

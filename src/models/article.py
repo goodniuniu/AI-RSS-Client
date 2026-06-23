@@ -54,6 +54,7 @@ class Article:
     feed_url: Optional[str] = None  # 来源RSS URL
     published_at: Optional[str] = None
     created_at: Optional[str] = None
+    qr_code_url: Optional[str] = None  # 二维码图片URL（相对路径）
 
     # Frontend fields (not from API)
     displayed_at: Optional[str] = None
@@ -180,6 +181,7 @@ class Article:
             'feed_url': self.feed_url,
             'published_at': self.published_at,
             'created_at': self.created_at,
+            'qr_code_url': self.qr_code_url,
             'displayed_at': self.displayed_at,
             'display_count': self.display_count,
             'is_favorite': self.is_favorite,
@@ -203,6 +205,7 @@ class Article:
             feed_url=data.get('feed_url'),
             published_at=data.get('published_at'),
             created_at=data.get('created_at'),
+            qr_code_url=data.get('qr_code_url'),
         )
 
         # Extract frontend fields if present
@@ -241,6 +244,7 @@ class Article:
             feed_url=data.get('feed_url'),
             published_at=data.get('published_at'),
             created_at=data.get('created_at'),
+            qr_code_url=data.get('qr_code_url'),
         )
 
     def __repr__(self) -> str:
