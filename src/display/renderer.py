@@ -174,6 +174,7 @@ class ContentRenderer:
 
         # 绘制二维码
         qr_code_url = article.get('qr_code_url')
+        logger.info(f"文章二维码URL: {qr_code_url}")
         if qr_code_url:
             try:
                 base_url = "http://8.134.202.27:8000"
