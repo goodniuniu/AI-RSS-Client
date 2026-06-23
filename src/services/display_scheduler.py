@@ -184,6 +184,7 @@ class DisplayScheduler:
                 'published': article.display_date,
                 'feed_name': article.feed_name,  # 额外传递原始 feed 名称
                 'feed_category': article.feed_category,  # 额外传递分类
+                'qr_code_url': article.qr_code_url,  # 二维码URL
             }
             # Enable bilingual mode by default to help users learn English
             image = self.renderer.render_news_card(article_dict, index=1, total=1,
