@@ -597,38 +597,17 @@ class ContentRenderer:
             (self.width - self.margin, footer_y)
         ], fill=0, width=1)
 
-        # 元数据文字
-        font = self.fonts.get_font_by_name('meta', 9)
+        # 元数据文字（调大以提升可读性；原 get_font_by_name('meta',9) 经 0.8 缩放仅 7px 偏小）
+        font = self.fonts.get_font(11)
 
         # 检查是否有自定义 footer
         if 'custom_footer' in article:
             footer_text = article['custom_footer']
         else:
-            # 优先使用 feed_category（来源分类），其次使用 source
+            # 日期已在标题下方醒目显示，footer 只放来源，避免内容过密使字号受限
             source_category = article.get('feed_category', '')
             feed_name = article.get('feed_name', '')
-            published = article.get('published', '')
-
-            # 格式化日期 - 显示完整时间以便区分新旧
-            if published:
-                try:
-                    dt = datetime.fromisoformat(published.replace('Z', '+00:00'))
-                    # 显示月-日 时:分，更清晰
-                    date_str = dt.strftime('%m-%d %H:%M')
-                except:
-                    date_str = str(published)[:16]  # 截取前16个字符
-            else:
-                date_str = ''
-
-            # 优先显示时间，其次显示来源分类
-            if date_str:
-                footer_text = f"{date_str}"
-                if source_category:
-                    footer_text += f" |{source_category}"
-            elif feed_name:
-                footer_text += f" |{feed_name}"
-            else:
-                footer_text = source_category or feed_name or 'AI-NEWS'
+            footer_text = source_category or feed_name or 'AI-NEWS'
 
         # 左对齐：显示发布时间（主要）和来源（次要）
         text_y = footer_y + 4
