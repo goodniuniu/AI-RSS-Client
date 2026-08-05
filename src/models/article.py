@@ -111,7 +111,7 @@ class Article:
             return content
 
         # No content available
-        return "No content available."
+        return "AI 摘要生成中，扫码阅读原文。"
 
     @property
     def display_content_en(self) -> str:
@@ -120,8 +120,10 @@ class Article:
         if self.summary_en and self.summary_en.strip():
             return self.summary_en.strip()
 
-        # Fall back to Chinese summary
-        return self.display_content
+        # 英文摘要缺失时回退中文摘要；若中文摘要也没有，则给英文扫码引导
+        if self.summary and self.summary.strip():
+            return self.display_content
+        return "Summary pending. Scan the QR code to read."
 
     @property
     def display_date(self) -> str:
