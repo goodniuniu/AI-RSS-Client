@@ -143,6 +143,15 @@ class Article:
         return "Unknown date"
 
     @property
+    def raw_publish_timestamp(self) -> Optional[str]:
+        """原始发布时间戳（含时分秒），优先 published_at、回退 created_at。
+
+        与 display_date 不同：保留完整时间，避免下游格式化时把时分误显示为 00:00。
+        两者皆无时返回 None。
+        """
+        return self.published_at or self.created_at
+
+    @property
     def is_read(self) -> bool:
         """Check if article has been displayed"""
         return self.status != ArticleStatus.NEW

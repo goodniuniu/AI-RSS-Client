@@ -157,6 +157,9 @@ class ContentRenderer:
         # 3. 绘制标题
         cursor_y = self._draw_title(draw, article, self.title_height + self.margin + 5)
 
+        # 3.5 绘制文章发布日期（标题下方醒目一行）
+        cursor_y = self._draw_publish_date(draw, article, cursor_y)
+
         # 4. 计算可用空间（为二维码预留140px）
         qr_code_height = 140
         available_height = self.height - cursor_y - self.footer_height - qr_code_height - self.margin
@@ -408,6 +411,38 @@ class ContentRenderer:
             cursor_y += int(line_height * self.layout.line_spacing)
 
         return cursor_y
+
+    def _draw_publish_date(self, draw: ImageDraw.Draw,
+                           article: Dict[str, Any], start_y: int) -> int:
+        """
+        绘制文章发布日期（标题下方醒目一行：年-月-日 时:分 + 分隔线）
+
+        Args:
+            draw: ImageDraw 对象
+            article: 文章数据（'published' 为完整 ISO 时间戳）
+            start_y: 起始 Y 坐标
+
+        Returns:
+            int: 绘制后的 Y 坐标（无日期则原样返回 start_y）
+        """
+        published = article.get('published')
+        if not published:
+            return start_y
+        try:
+            dt = datetime.fromisoformat(str(published).replace('Z', '+00:00'))
+            date_text = dt.strftime('%Y-%m-%d %H:%M')
+        except (ValueError, AttributeError):
+            date_text = str(published)[:16]
+
+        font = self.fonts.get_font(11)
+        line_height = self.fonts.get_text_height(font)
+        text_y = start_y + 4
+        draw.text((self.margin, text_y), date_text, font=font, fill=0)
+        cursor_y = text_y + line_height + 3
+        # 分隔线
+        draw.line([(self.margin, cursor_y), (self.width - self.margin, cursor_y)],
+                  fill=0, width=1)
+        return cursor_y + 4
 
     def _draw_summary(self, draw: ImageDraw.Draw,
                      article: Dict[str, Any], start_y: int) -> int:
