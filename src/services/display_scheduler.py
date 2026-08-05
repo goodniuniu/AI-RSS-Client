@@ -38,7 +38,8 @@ class DisplayScheduler:
                  content_manager: ContentManager = None,
                  display_interval_minutes: float = 0.5,
                  random_on_empty: bool = True,
-                 mark_as_read_after_display: bool = False):  # 改为False，支持循环播放
+                 mark_as_read_after_display: bool = False,  # 改为False，支持循环播放
+                 health_monitor=None):  # type: ignore
         """
         Initialize display scheduler
 
@@ -47,11 +48,13 @@ class DisplayScheduler:
             display_interval_minutes: Minutes between display updates
             random_on_empty: Show random articles when all read
             mark_as_read_after_display: Mark articles as read after display
+            health_monitor: 后端健康探针（可选），用于在屏幕角标提示后端离线
         """
         self.content_manager = content_manager or ContentManager()
         self.display_interval_minutes = display_interval_minutes
         self.random_on_empty = random_on_empty
         self.mark_as_read_after_display = mark_as_read_after_display
+        self.health_monitor = health_monitor
 
         # Display components
         self.epaper_driver: Optional[EpaperDriver] = None
@@ -186,9 +189,13 @@ class DisplayScheduler:
                 'feed_category': article.feed_category,  # 额外传递分类
                 'qr_code_url': article.qr_code_url,  # 二维码URL
             }
+            # 查询后端健康状态（用于在屏幕角标提示离线）
+            backend_online = self.health_monitor.is_online if self.health_monitor else True
+
             # Enable bilingual mode by default to help users learn English
             image = self.renderer.render_news_card(article_dict, index=1, total=1,
-                                                   ip_address=self.ip_address, bilingual=True)
+                                                   ip_address=self.ip_address, bilingual=True,
+                                                   backend_online=backend_online)
 
             if save_debug:
                 debug_path = Path("data") / f"debug_display_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -296,6 +303,7 @@ class DisplayScheduler:
             'mark_as_read_after_display': self.mark_as_read_after_display,
             'hardware_initialized': self.epaper_driver is not None,
             'network_status': 'online' if content_status.get('api_connected') else 'offline',
+            'backend_online': self.health_monitor.is_online if self.health_monitor else None,
             'content': {
                 'total_summaries': content_status.get('total_summaries', 0),
                 'undisplayed_count': content_status.get('undisplayed_count', 0),
@@ -334,7 +342,8 @@ class DisplayScheduler:
                 'published': test_article.display_date,
             }
             image = self.renderer.render_news_card(test_article_dict, index=1, total=1,
-                                                   ip_address=self.ip_address, bilingual=True)
+                                                   ip_address=self.ip_address, bilingual=True,
+                                                   backend_online=True)
 
             logger.info("Displaying on e-paper...")
             self.epaper_driver.display_image(image)

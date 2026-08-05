@@ -62,3 +62,10 @@ network:
   timeout_seconds: 10
   retries: 3
   retry_delay: 5
+
+health_monitor:
+  # 后端健康探针配置（可选；后端不可达时在墨水屏角标提示"⚠离线"并告警）
+  enabled: true
+  check_interval_seconds: 60   # 探测周期（秒）
+  request_timeout_seconds: 3   # 单次探测超时（秒），超时即视为不可达
+  failure_threshold: 2         # 连续失败 N 次才判定离线（防抖）

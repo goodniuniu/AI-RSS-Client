@@ -11,6 +11,7 @@ from typing import Optional
 from ..config import Config
 from .display_scheduler import DisplayScheduler
 from .content_manager import ContentManager
+from .health_monitor import BackendHealthMonitor
 from ..fetchers import create_client
 from ..utils.logger import get_logger
 
@@ -61,6 +62,18 @@ class DisplayService:
             api_token=api_token
         )
 
+        # 创建后端健康探针（周期性探测后端可达性，离线时在屏幕角标提示）
+        hm_cfg = self.config.health_monitor
+        if hm_cfg.enabled:
+            self.health_monitor = BackendHealthMonitor(
+                base_url=self.api_client.base_url,
+                check_interval_seconds=hm_cfg.check_interval_seconds,
+                request_timeout_seconds=hm_cfg.request_timeout_seconds,
+                failure_threshold=hm_cfg.failure_threshold,
+            )
+        else:
+            self.health_monitor = None
+
         # 创建内容管理器（只读，用于获取缓存文章）
         self.content_manager = ContentManager(
             api_client=self.api_client,
@@ -75,7 +88,8 @@ class DisplayService:
             content_manager=self.content_manager,
             display_interval_minutes=self.display_interval_minutes,
             random_on_empty=self.config.display_scheduler.random_on_empty,
-            mark_as_read_after_display=self.config.display_scheduler.mark_as_read_after_display
+            mark_as_read_after_display=self.config.display_scheduler.mark_as_read_after_display,
+            health_monitor=self.health_monitor
         )
 
         # 服务状态
@@ -123,6 +137,10 @@ class DisplayService:
             logger.error(f"Failed to initialize display hardware: {e}")
             logger.error("Display service will run in headless mode (no hardware updates)")
             # 继续运行，但不更新硬件
+
+        # 启动后端健康监控（后台线程）
+        if self.health_monitor:
+            self.health_monitor.start()
 
         # 使用现有的 DisplayScheduler.run_daemon() 逻辑
         # 这里我们重新实现以支持优雅关闭
@@ -217,6 +235,8 @@ class DisplayService:
     def close(self):
         """关闭资源"""
         try:
+            if self.health_monitor:
+                self.health_monitor.stop()
             if self.scheduler:
                 self.scheduler.close()
             if self.content_manager:
@@ -241,7 +261,8 @@ class DisplayService:
             'display_cycles': scheduler_status.get('display_cycles', 0),
             'last_display_time': scheduler_status.get('last_display_time'),
             'current_article': scheduler_status.get('current_article'),
-            'hardware_initialized': scheduler_status.get('hardware_initialized', False)
+            'hardware_initialized': scheduler_status.get('hardware_initialized', False),
+            'backend_health': self.health_monitor.get_status() if self.health_monitor else None,
         }
 
     def __enter__(self):

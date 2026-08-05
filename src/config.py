@@ -75,6 +75,15 @@ class NetworkConfig:
     retry_delay: int
 
 
+@dataclass
+class HealthMonitorConfig:
+    """后端健康探针配置（可选；config.yml 未配置时使用默认值）"""
+    enabled: bool = True
+    check_interval_seconds: int = 60       # 探测周期（秒）
+    request_timeout_seconds: int = 3       # 单次探测超时（秒）
+    failure_threshold: int = 2             # 连续失败 N 次才判定离线（防抖）
+
+
 class Config:
     """配置管理器
 
@@ -115,6 +124,15 @@ class Config:
             self.display_scheduler = DisplaySchedulerConfig(**data['display_scheduler'])
             self.logging = LoggingConfig(**data['logging'])
             self.network = NetworkConfig(**data['network'])
+
+            # health_monitor 为可选配置节；未提供时使用默认值
+            hm = data.get('health_monitor') or {}
+            self.health_monitor = HealthMonitorConfig(
+                enabled=hm.get('enabled', True),
+                check_interval_seconds=hm.get('check_interval_seconds', 60),
+                request_timeout_seconds=hm.get('request_timeout_seconds', 3),
+                failure_threshold=hm.get('failure_threshold', 2),
+            )
 
             logger.info(f"配置加载成功: {self.config_path}")
 

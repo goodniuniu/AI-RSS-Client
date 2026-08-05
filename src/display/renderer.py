@@ -111,7 +111,8 @@ class ContentRenderer:
     def render_news_card(self, article: Dict[str, Any],
                          index: int = 1, total: int = 1,
                          ip_address: str = None,
-                         bilingual: bool = True) -> Image.Image:
+                         bilingual: bool = True,
+                         backend_online: bool = True) -> Image.Image:
         """
         渲染新闻卡片
 
@@ -141,6 +142,7 @@ class ContentRenderer:
             total: 文章总数
             ip_address: IP地址（显示在右下角）
             bilingual: 是否显示双语（默认True）
+            backend_online: 后端是否在线（False 时在 Header 左上角显示"⚠离线"角标）
 
         Returns:
             Image.Image: 渲染后的图像
@@ -150,7 +152,7 @@ class ContentRenderer:
         draw = ImageDraw.Draw(image)
 
         # 2. 绘制 Header（黑底白字）
-        self._draw_header(draw, index, total)
+        self._draw_header(draw, index, total, backend_online=backend_online)
 
         # 3. 绘制标题
         cursor_y = self._draw_title(draw, article, self.title_height + self.margin + 5)
@@ -300,17 +302,19 @@ class ContentRenderer:
 
     def _draw_header(self, draw: ImageDraw.Draw,
                     index: int = 0, total: int = 0,
-                    title_text: Optional[str] = None) -> int:
+                    title_text: Optional[str] = None,
+                    backend_online: bool = True) -> int:
         """
         绘制页眉
 
-        显示实用信息：时间、星期、日期、天气
+        显示实用信息：时间、星期、日期、天气；后端离线时在左上角显示"⚠离线"角标
 
         Args:
             draw: ImageDraw 对象
             index: 当前索引（已废弃，保留兼容性）
             total: 总数（已废弃，保留兼容性）
             title_text: 自定义标题（如果提供，忽略其他参数）
+            backend_online: 后端是否在线（False 时绘制离线角标）
 
         Returns:
             int: 页眉高度
@@ -341,6 +345,20 @@ class ContentRenderer:
         text_y = (self.title_height - text_height) // 2
 
         draw.text((text_x, text_y), header_text, font=font, fill=255)
+
+        # 后端离线角标（左上角，白字）
+        if not backend_online:
+            try:
+                mark_font = self.fonts.get_font(11)
+                mark_text = "⚠离线"
+                mark_w = self.fonts.get_text_width(mark_text, mark_font)
+                mark_h = self.fonts.get_text_height(mark_font)
+                # 紧贴 Header 左侧，垂直居中
+                draw.text((4, (self.title_height - mark_h) // 2),
+                          mark_text, font=mark_font, fill=255)
+                logger.debug(f"绘制离线角标: {mark_text} (宽 {mark_w}px)")
+            except Exception as e:
+                logger.warning(f"绘制离线角标失败: {e}")
 
         return self.title_height
 
