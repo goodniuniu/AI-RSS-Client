@@ -346,17 +346,25 @@ class ContentRenderer:
 
         draw.text((text_x, text_y), header_text, font=font, fill=255)
 
-        # 后端离线角标（左上角，白字）
+        # 后端离线角标（左上角）：黑底 banner 上的反白小标签
+        # 用白底黑字"离线"，对比强烈、一眼可见，且只依赖中文字形（不使用 ⚠ 等字体缺失的符号）
         if not backend_online:
             try:
-                mark_font = self.fonts.get_font(11)
-                mark_text = "⚠离线"
+                mark_font = self.fonts.get_font(12)
+                mark_text = "离线"
                 mark_w = self.fonts.get_text_width(mark_text, mark_font)
                 mark_h = self.fonts.get_text_height(mark_font)
-                # 紧贴 Header 左侧，垂直居中
-                draw.text((4, (self.title_height - mark_h) // 2),
-                          mark_text, font=mark_font, fill=255)
-                logger.debug(f"绘制离线角标: {mark_text} (宽 {mark_w}px)")
+                pad_x, pad_y = 4, 2
+                box_x0 = 4
+                box_y0 = (self.title_height - mark_h - pad_y * 2) // 2
+                box_x1 = box_x0 + mark_w + pad_x * 2
+                box_y1 = box_y0 + mark_h + pad_y * 2
+                # 白底标签
+                draw.rectangle([(box_x0, box_y0), (box_x1, box_y1)], fill=255)
+                # 黑字居中
+                draw.text((box_x0 + pad_x, box_y0 + pad_y),
+                          mark_text, font=mark_font, fill=0)
+                logger.debug(f"绘制离线角标: 反白标签 {mark_w}x{mark_h}px @ ({box_x0},{box_y0})")
             except Exception as e:
                 logger.warning(f"绘制离线角标失败: {e}")
 
