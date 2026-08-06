@@ -515,49 +515,54 @@ class ContentRenderer:
 
         cursor_y = start_y
 
-        # 1. 绘制中文摘要（主要内容，精简显示）
-        summary_zh = article.get('summary', '')
-        if not summary_zh:
-            summary_zh = article.get('content', '暂无摘要')
+        # 取中英文摘要。注意：此处 article['summary']/['summary_en'] 已由 Article
+        # 模型的 display_content/display_content_en 提供，单语言摘要会跨语言回退，
+        # 故"只有一种摘要"的文章这两个字段值会相同。
+        summary_zh = article.get('summary', '') or article.get('content', '') or '暂无摘要'
+        summary_en = article.get('summary_en', '')
 
-        # 中文字号14pt
-        font_zh = self.fonts.get_font(14)
+        # 是否真正具备两种不同摘要（双语都有且内容不同）。
+        # 单摘要文章（中或英其一）经回退后两字段相同，走单栏布局，避免重复与留白。
+        has_both = bool(summary_en) and summary_en != summary_zh
 
-        # 计算中文摘要可用空间
-        if max_height:
-            available_height_zh = max_height
-        else:
-            # 预留: 分隔线(5px) + 英文区域(130px) + footer
-            reserved_space = 5 + 130 + self.footer_height + self.margin
-            available_height_zh = self.height - cursor_y - reserved_space
+        if has_both:
+            # —— 双语模式：中文区为主，为英文区预留空间，中间画分隔线 ——
+            # 中文字号14pt
+            font_zh = self.fonts.get_font(14)
 
-        max_lines_zh = self.layout.calculate_max_lines(available_height_zh, font_zh)
+            # 计算中文摘要可用空间
+            if max_height:
+                available_height_zh = max_height
+            else:
+                # 预留: 分隔线(5px) + 英文区域(130px) + footer
+                reserved_space = 5 + 130 + self.footer_height + self.margin
+                available_height_zh = self.height - cursor_y - reserved_space
 
-        # 绘制中文摘要
-        truncated_zh = self.layout.truncate_text(
-            summary_zh, font_zh, self.content_width, max_lines_zh, add_ellipsis=True
-        )
+            max_lines_zh = self.layout.calculate_max_lines(available_height_zh, font_zh)
 
-        lines_zh = truncated_zh.split('\n')
-        line_height_zh = self.fonts.get_text_height(font_zh)
+            # 绘制中文摘要
+            truncated_zh = self.layout.truncate_text(
+                summary_zh, font_zh, self.content_width, max_lines_zh, add_ellipsis=True
+            )
 
-        for line in lines_zh:
-            draw.text((self.margin, cursor_y), line, font=font_zh, fill=0)
-            cursor_y += int(line_height_zh * self.layout.line_spacing)
+            lines_zh = truncated_zh.split('\n')
+            line_height_zh = self.fonts.get_text_height(font_zh)
 
-        # 2. 绘制分隔线（如果空间足够）
-        if cursor_y < self.height - self.footer_height - 130:
-            # 增加一点间距
-            cursor_y += 3
-            draw.line([
-                (self.margin, cursor_y),
-                (self.width - self.margin, cursor_y)
-            ], fill=0, width=1)
-            cursor_y += 5
+            for line in lines_zh:
+                draw.text((self.margin, cursor_y), line, font=font_zh, fill=0)
+                cursor_y += int(line_height_zh * self.layout.line_spacing)
 
-            # 3. 绘制英文摘要（学习区域，16pt，6行）
-            summary_en = article.get('summary_en', '')
-            if summary_en:
+            # 分隔线 + 英文摘要（空间足够时）
+            if cursor_y < self.height - self.footer_height - 130:
+                # 增加一点间距
+                cursor_y += 3
+                draw.line([
+                    (self.margin, cursor_y),
+                    (self.width - self.margin, cursor_y)
+                ], fill=0, width=1)
+                cursor_y += 5
+
+                # 英文摘要（学习区域，16pt，最多6行）
                 # 英文字号提升到16pt（更易读）
                 font_en = self.fonts.get_font(16)
 
@@ -575,6 +580,21 @@ class ContentRenderer:
                 for line in lines_en:
                     draw.text((self.margin, cursor_y), line, font=font_en, fill=0)
                     cursor_y += int(line_height_en * self.layout.line_spacing)
+        else:
+            # —— 单摘要模式：只有一种摘要（中或英），整栏占满显示，不画分隔线 ——
+            single = summary_zh  # 已含回退，必非空
+            font_single = self.fonts.get_font(15)
+            available_height = max_height if max_height else (
+                self.height - cursor_y - self.footer_height - self.margin
+            )
+            max_lines = self.layout.calculate_max_lines(available_height, font_single)
+            truncated = self.layout.truncate_text(
+                single, font_single, self.content_width, max_lines, add_ellipsis=True
+            )
+            line_height = self.fonts.get_text_height(font_single)
+            for line in truncated.split('\n'):
+                draw.text((self.margin, cursor_y), line, font=font_single, fill=0)
+                cursor_y += int(line_height * self.layout.line_spacing)
 
         return cursor_y
 

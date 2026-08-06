@@ -96,10 +96,19 @@ class Article:
 
     @property
     def display_content(self) -> str:
-        """Get content for display (prefer summary over full content)"""
-        # Prefer AI-generated summary
+        """Get content for display (prefer summary over full content).
+
+        回退顺序：中文摘要 → 英文摘要 → 正文 → 扫码引导。
+        项目设计中一篇文章只生成一种摘要（中或英），故任一摘要存在即应显示，
+        不应因中文摘要缺失而落到扫码引导。
+        """
+        # Prefer Chinese AI-generated summary
         if self.summary and self.summary.strip():
             return self.summary.strip()
+
+        # 中文摘要缺失时回退英文摘要（一篇文章可能只有英文摘要）
+        if self.summary_en and self.summary_en.strip():
+            return self.summary_en.strip()
 
         # Fall back to full content
         if self.content and self.content.strip():
@@ -160,9 +169,10 @@ class Article:
 
     @property
     def has_content(self) -> bool:
-        """Check if article has any content (summary or full)"""
+        """Check if article has any content (Chinese/English summary or full)"""
         return bool(
             (self.summary and self.summary.strip()) or
+            (self.summary_en and self.summary_en.strip()) or
             (self.content and self.content.strip())
         )
 
